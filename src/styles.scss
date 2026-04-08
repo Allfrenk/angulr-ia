@@ -1,0 +1,52 @@
+/* 1. Reset e configurazione base */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #09090b; /* zinc-950 */
+
+  /* Nasconde la scrollbar a livello di browser (globale) */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Chrome, Safari ed Edge (Webkit) per il browser */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* 2. Gestione Tema Light */
+html.light,
+html.light body {
+  background-color: #f4f4f5; /* zinc-100 */
+}
+
+/* 3. Utility class (per elementi interni come sidebar o main) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 4. Debug utility */
+.red {
+  border: 1px solid red;
+}
+
+// puntatori per spotlight
+@property --x {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --y {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
