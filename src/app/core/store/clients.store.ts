@@ -165,6 +165,11 @@ export const ClientsStore = signalStore(
       };
       patchState(store, { clients: [...store.clients(), newClient] });
     },
+    updateClient(id: string, changes: Partial<Omit<Client, 'id' | 'createdAt'>>): void {
+      patchState(store, {
+        clients: store.clients().map((c) => (c.id === id ? { ...c, ...changes } : c)),
+      });
+    },
     getClientById(id: string): Client | undefined {
       return store.clients().find((c) => c.id === id);
     },

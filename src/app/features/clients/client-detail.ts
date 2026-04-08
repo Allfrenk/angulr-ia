@@ -1,21 +1,24 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { email, form, FormField, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   ArrowLeft,
   Building2,
   Clock,
+  Edit,
   LUCIDE_ICONS,
   LucideAngularModule,
   LucideIconProvider,
   Mail,
   Phone,
   Tag,
+  X,
 } from 'lucide-angular';
 import { map } from 'rxjs/operators';
 import { ThemeService } from '../../core/services/theme';
-import { ClientsStore } from '../../core/store/clients.store';
+import { Client, ClientsStore } from '../../core/store/clients.store';
 import { FeaturePill } from '../../shared/components/feature-pill';
 import { GridBackground } from '../../shared/components/grid-background';
 
@@ -61,12 +64,12 @@ const MOCK_INTERACTIONS: Interaction[] = [
 @Component({
   selector: 'app-client-detail',
   standalone: true,
-  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe, DatePipe],
+  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe, DatePipe, FormField],
   providers: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ ArrowLeft, Mail, Phone, Building2, Tag, Clock }),
+      useValue: new LucideIconProvider({ ArrowLeft, Mail, Phone, Building2, Tag, Clock, Edit, X }),
     },
   ],
   template: `
@@ -124,17 +127,33 @@ const MOCK_INTERACTIONS: Interaction[] = [
                 </span>
               </div>
             </div>
-            <div class="text-right">
-              <p
-                class="text-xs uppercase tracking-wider"
-                [class.text-zinc-500]="isDark()"
-                [class.text-zinc-600]="!isDark()"
+            <div class="flex flex-col items-end gap-3">
+              <div class="text-right">
+                <p
+                  class="text-xs uppercase tracking-wider"
+                  [class.text-zinc-500]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                >
+                  Valore contratto
+                </p>
+                <p class="text-2xl font-bold text-violet-400 mt-1">
+                  {{ c.value | currency: 'EUR' : 'symbol' : '1.0-0' : 'it' }}
+                </p>
+              </div>
+              <button
+                (click)="openEditModal(c)"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer border"
+                [class.border-zinc-700]="isDark()"
+                [class.border-zinc-300]="!isDark()"
+                [class.text-zinc-300]="isDark()"
+                [class.text-zinc-700]="!isDark()"
+                [class.hover:border-violet-500]="true"
+                [class.hover:text-violet-400]="isDark()"
+                [class.hover:text-violet-600]="!isDark()"
               >
-                Valore contratto
-              </p>
-              <p class="text-2xl font-bold text-violet-400 mt-1">
-                {{ c.value | currency: 'EUR' : 'symbol' : '1.0-0' : 'it' }}
-              </p>
+                <lucide-icon name="edit" [size]="14" />
+                Modifica
+              </button>
             </div>
           </div>
 
@@ -362,8 +381,9 @@ const MOCK_INTERACTIONS: Interaction[] = [
             >
               Il clientId viene estratto dalla route con toSignal(route.paramMap). Il client è un
               computed signal che reagisce all'id — se l'id cambia, il computed ricalcola
-              automaticamente trovando il cliente corrispondente nello store. Lo storico usa
-              &#64;defer on viewport con &#64;placeholder per il lazy rendering.
+              automaticamente trovando il cliente corrispondente nello store. Il modal di modifica
+              usa Signal Forms (API sperimentale Angular 21): editModel è un signal&lt;T&gt; passato
+              a form() che crea un FieldTree reattivo pre-popolato con i dati del cliente.
             </p>
           </div>
         } @placeholder {
@@ -372,6 +392,199 @@ const MOCK_INTERACTIONS: Interaction[] = [
           <ng-container></ng-container>
         }
       </div>
+
+      <!-- MODAL MODIFICA CLIENTE -->
+      @if (showEditModal()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            class="absolute inset-0 bg-black/60"
+            (click)="closeEditModal()"
+            (keypress)="closeEditModal()"
+            role="button"
+            tabindex="0"
+          ></div>
+          <div
+            class="relative z-10 w-full max-w-md rounded-2xl border p-8 space-y-4"
+            [class.glass-dark]="isDark()"
+            [class.glass-light]="!isDark()"
+            [class.border-zinc-800]="isDark()"
+            [class.border-zinc-300]="!isDark()"
+          >
+            <div class="flex items-center justify-between">
+              <h2
+                class="font-bold text-lg"
+                [class.text-white]="isDark()"
+                [class.text-zinc-900]="!isDark()"
+              >
+                Modifica Cliente
+              </h2>
+              <button
+                (click)="closeEditModal()"
+                class="cursor-pointer hover:opacity-70 transition-opacity"
+              >
+                <lucide-icon name="x" [size]="20" [color]="isDark() ? '#71717a' : '#52525b'" />
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Nome -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="edit-name"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Nome *</label
+                >
+                <input
+                  id="edit-name"
+                  type="text"
+                  [formField]="editForm.name"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                />
+                @if (editForm.name().touched() && editForm.name().invalid()) {
+                  @for (err of editForm.name().errors(); track err.kind) {
+                    <span class="text-xs text-red-400">{{ err.message }}</span>
+                  }
+                }
+              </div>
+
+              <!-- Email -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="edit-email"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Email *</label
+                >
+                <input
+                  id="edit-email"
+                  type="email"
+                  [formField]="editForm.email"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                />
+                @if (editForm.email().touched() && editForm.email().invalid()) {
+                  @for (err of editForm.email().errors(); track err.kind) {
+                    <span class="text-xs text-red-400">{{ err.message }}</span>
+                  }
+                }
+              </div>
+
+              <!-- Azienda -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="edit-company"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Azienda *</label
+                >
+                <input
+                  id="edit-company"
+                  type="text"
+                  [formField]="editForm.company"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                />
+              </div>
+
+              <!-- Telefono -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="edit-phone"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Telefono</label
+                >
+                <input
+                  id="edit-phone"
+                  type="tel"
+                  [formField]="editForm.phone"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                />
+              </div>
+
+              <!-- Status -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="edit-status"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Stato</label
+                >
+                <select
+                  id="edit-status"
+                  [value]="editStatus()"
+                  (change)="editStatus.set($any($event.target).value)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors appearance-none cursor-pointer"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                >
+                  <option value="active">Attivo</option>
+                  <option value="prospect">Prospect</option>
+                  <option value="inactive">Inattivo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button
+                (click)="closeEditModal()"
+                class="flex-1 rounded-xl py-3 text-sm font-semibold transition-colors cursor-pointer border"
+                [class.border-zinc-700]="isDark()"
+                [class.border-zinc-300]="!isDark()"
+                [class.text-zinc-400]="isDark()"
+                [class.text-zinc-700]="!isDark()"
+                [class.hover:bg-zinc-800]="isDark()"
+                [class.hover:bg-zinc-100]="!isDark()"
+              >
+                Annulla
+              </button>
+              <button
+                (click)="saveEdit()"
+                [disabled]="isSaving()"
+                class="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                @if (isSaving()) {
+                  Salvataggio...
+                } @else {
+                  Salva modifiche
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </app-grid-background>
   `,
 })
@@ -392,6 +605,48 @@ export class ClientDetail {
   });
 
   interactions = MOCK_INTERACTIONS;
+
+  // — Edit modal —
+  showEditModal = signal(false);
+  isSaving = signal(false);
+  editStatus = signal<'active' | 'inactive' | 'prospect'>('active');
+
+  editModel = signal({ name: '', email: '', phone: '', company: '' });
+
+  editForm = form(this.editModel, (path) => {
+    required(path.name, { message: 'Nome obbligatorio' });
+    required(path.company, { message: 'Azienda obbligatoria' });
+    email(path.email, { message: 'Email non valida' });
+    required(path.email, { message: 'Email obbligatoria' });
+  });
+
+  openEditModal(c: Client): void {
+    this.editModel.set({ name: c.name, email: c.email, phone: c.phone, company: c.company });
+    this.editStatus.set(c.status);
+    this.showEditModal.set(true);
+  }
+
+  closeEditModal(): void {
+    this.showEditModal.set(false);
+  }
+
+  saveEdit(): void {
+    if (this.editForm.name().invalid() || this.editForm.email().invalid()) return;
+    const id = this.clientId();
+    if (!id) return;
+    this.isSaving.set(true);
+    setTimeout(() => {
+      this.clientsStore.updateClient(id, {
+        name: this.editForm.name().value(),
+        email: this.editForm.email().value(),
+        phone: this.editForm.phone().value(),
+        company: this.editForm.company().value(),
+        status: this.editStatus(),
+      });
+      this.isSaving.set(false);
+      this.closeEditModal();
+    }, 500);
+  }
 
   getStatusColor(status: string): string {
     if (this.isDark()) {
@@ -427,6 +682,10 @@ export class ClientDetail {
     'ActivatedRoute',
     'computed()',
     'paramMap',
+    'Signal Forms',
+    'form()',
+    'FormField',
+    'updateClient()',
     '@defer on viewport',
     '@if @else',
     'inject()',

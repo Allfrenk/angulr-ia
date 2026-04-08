@@ -56,9 +56,9 @@ import { ThemeToggle } from '../../shared/components/theme-toggle';
           [class.text-zinc-500]="!isDark()"
           style="animation: fadeUp 0.5s ease both; animation-delay: 160ms"
         >
-          Una demo CRM costruita con Angular 21 e le sue best practices moderne: Signal Store,
-          Signal Forms, Control Flow (&#64;if, &#64;else, &#64;for), Deferrable Views (&#64;defer,
-          &#64;loading, &#64;placeholder), Zoneless Change Detection e lazy routing.
+          Un CRM reale costruito con le API più recenti di Angular 21: Zoneless Change Detection,
+          SignalStore, Signal Forms sperimentali, &#64;defer per il lazy rendering e lazy routing
+          con auth guard.
         </p>
 
         <!-- CTA Button -->

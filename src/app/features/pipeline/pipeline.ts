@@ -1,12 +1,15 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { form, FormField, required } from '@angular/forms/signals';
 import {
   ChevronLeft,
   ChevronRight,
   LUCIDE_ICONS,
   LucideAngularModule,
   LucideIconProvider,
+  Plus,
   TrendingUp,
+  X,
 } from 'lucide-angular';
 import { ThemeService } from '../../core/services/theme';
 import { Deal, DealStage, PipelineStore, STAGES } from '../../core/store/pipeline.store';
@@ -16,12 +19,12 @@ import { GridBackground } from '../../shared/components/grid-background';
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe],
+  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe, FormField],
   providers: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ ChevronRight, ChevronLeft, TrendingUp }),
+      useValue: new LucideIconProvider({ ChevronRight, ChevronLeft, TrendingUp, Plus, X }),
     },
   ],
   template: `
@@ -42,10 +45,10 @@ import { GridBackground } from '../../shared/components/grid-background';
               [class.text-zinc-400]="isDark()"
               [class.text-zinc-600]="!isDark()"
             >
-              Gestisci i tuoi deal
+              {{ pipelineStore.activeDeals().length }} deal attivi · trascina per navigare
             </p>
           </div>
-          <div class="flex gap-4 flex-wrap">
+          <div class="flex items-center gap-4 flex-wrap">
             <div
               class="rounded-xl border px-5 py-3"
               [class.glass-card-dark]="isDark()"
@@ -102,6 +105,13 @@ import { GridBackground } from '../../shared/components/grid-background';
                 {{ pipelineStore.wonValue() | currency: 'EUR' : 'symbol' : '1.0-0' : 'it' }}
               </p>
             </div>
+            <button
+              (click)="openModal()"
+              class="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+            >
+              <lucide-icon name="plus" [size]="16" />
+              Nuovo Deal
+            </button>
           </div>
         </div>
 
@@ -293,10 +303,10 @@ import { GridBackground } from '../../shared/components/grid-background';
               [class.text-zinc-700]="!isDark()"
             >
               dealsByStage è un computed signal che genera una Map&lt;DealStage, Deal[]&gt; — ogni
-              colonna del kanban legge dalla Map senza ricalcoli inutili. moveToStage usa patchState
-              per aggiornare immutabilmente il deal nello store. &#64;for con &#64;empty gestisce le
-              colonne vuote dichiarativamente. Il movimento tra stage è reattivo: basta modificare
-              il signal e il kanban si aggiorna automaticamente.
+              colonna del kanban legge dalla Map senza ricalcoli inutili. addDeal usa patchState per
+              aggiungere immutabilmente il deal nello store. Il modal usa Signal Forms per i campi
+              testo e signals separati per stage e probability. &#64;for con &#64;empty gestisce le
+              colonne vuote dichiarativamente.
             </p>
           </div>
         } @placeholder {
@@ -305,6 +315,242 @@ import { GridBackground } from '../../shared/components/grid-background';
           <ng-container></ng-container>
         }
       </div>
+
+      <!-- MODAL NUOVO DEAL -->
+      @if (showModal()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            class="absolute inset-0 bg-black/60"
+            (click)="closeModal()"
+            (keypress)="closeModal()"
+            role="button"
+            tabindex="0"
+          ></div>
+          <div
+            class="relative z-10 w-full max-w-md rounded-2xl border p-8 space-y-4 max-h-[90vh] overflow-y-auto"
+            [class.glass-dark]="isDark()"
+            [class.glass-light]="!isDark()"
+            [class.border-zinc-800]="isDark()"
+            [class.border-zinc-300]="!isDark()"
+          >
+            <div class="flex items-center justify-between">
+              <h2
+                class="font-bold text-lg"
+                [class.text-white]="isDark()"
+                [class.text-zinc-900]="!isDark()"
+              >
+                Nuovo Deal
+              </h2>
+              <button
+                (click)="closeModal()"
+                class="cursor-pointer hover:opacity-70 transition-opacity"
+              >
+                <lucide-icon name="x" [size]="20" [color]="isDark() ? '#71717a' : '#52525b'" />
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Cliente -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="deal-client"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Cliente *</label
+                >
+                <input
+                  id="deal-client"
+                  type="text"
+                  [formField]="newDealForm.clientName"
+                  placeholder="Nome cliente"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                  [class.placeholder:text-zinc-600]="isDark()"
+                  [class.placeholder:text-zinc-400]="!isDark()"
+                />
+                @if (newDealForm.clientName().touched() && newDealForm.clientName().invalid()) {
+                  @for (err of newDealForm.clientName().errors(); track err.kind) {
+                    <span class="text-xs text-red-400">{{ err.message }}</span>
+                  }
+                }
+              </div>
+
+              <!-- Azienda -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="deal-company"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Azienda *</label
+                >
+                <input
+                  id="deal-company"
+                  type="text"
+                  [formField]="newDealForm.company"
+                  placeholder="Nome azienda"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                  [class.placeholder:text-zinc-600]="isDark()"
+                  [class.placeholder:text-zinc-400]="!isDark()"
+                />
+                @if (newDealForm.company().touched() && newDealForm.company().invalid()) {
+                  @for (err of newDealForm.company().errors(); track err.kind) {
+                    <span class="text-xs text-red-400">{{ err.message }}</span>
+                  }
+                }
+              </div>
+
+              <!-- Note -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="deal-notes"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Note</label
+                >
+                <input
+                  id="deal-notes"
+                  type="text"
+                  [formField]="newDealForm.notes"
+                  placeholder="Note sul deal (opzionale)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                  [class.placeholder:text-zinc-600]="isDark()"
+                  [class.placeholder:text-zinc-400]="!isDark()"
+                />
+              </div>
+
+              <!-- Valore + Probabilità (2 col) -->
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label
+                    for="deal-value"
+                    class="text-xs font-medium uppercase tracking-wider"
+                    [class.text-zinc-400]="isDark()"
+                    [class.text-zinc-600]="!isDark()"
+                    >Valore €</label
+                  >
+                  <input
+                    id="deal-value"
+                    type="number"
+                    min="0"
+                    [value]="newDealValue()"
+                    (input)="newDealValue.set(+$any($event.target).value)"
+                    placeholder="0"
+                    class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                    [class.bg-zinc-800]="isDark()"
+                    [class.bg-zinc-50]="!isDark()"
+                    [class.border-zinc-700]="isDark()"
+                    [class.border-zinc-300]="!isDark()"
+                    [class.text-white]="isDark()"
+                    [class.text-zinc-900]="!isDark()"
+                    [class.placeholder:text-zinc-600]="isDark()"
+                    [class.placeholder:text-zinc-400]="!isDark()"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    for="deal-probability"
+                    class="text-xs font-medium uppercase tracking-wider"
+                    [class.text-zinc-400]="isDark()"
+                    [class.text-zinc-600]="!isDark()"
+                    >Prob. %</label
+                  >
+                  <input
+                    id="deal-probability"
+                    type="number"
+                    min="0"
+                    max="100"
+                    [value]="newDealProbability()"
+                    (input)="newDealProbability.set(+$any($event.target).value)"
+                    placeholder="25"
+                    class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors"
+                    [class.bg-zinc-800]="isDark()"
+                    [class.bg-zinc-50]="!isDark()"
+                    [class.border-zinc-700]="isDark()"
+                    [class.border-zinc-300]="!isDark()"
+                    [class.text-white]="isDark()"
+                    [class.text-zinc-900]="!isDark()"
+                    [class.placeholder:text-zinc-600]="isDark()"
+                    [class.placeholder:text-zinc-400]="!isDark()"
+                  />
+                </div>
+              </div>
+
+              <!-- Stage -->
+              <div class="flex flex-col gap-1">
+                <label
+                  for="deal-stage"
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                  >Stage</label
+                >
+                <select
+                  id="deal-stage"
+                  [value]="newDealStage()"
+                  (change)="newDealStage.set($any($event.target).value)"
+                  class="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-colors appearance-none cursor-pointer"
+                  [class.bg-zinc-800]="isDark()"
+                  [class.bg-zinc-50]="!isDark()"
+                  [class.border-zinc-700]="isDark()"
+                  [class.border-zinc-300]="!isDark()"
+                  [class.text-white]="isDark()"
+                  [class.text-zinc-900]="!isDark()"
+                >
+                  @for (s of stages; track s.key) {
+                    <option [value]="s.key">{{ s.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button
+                (click)="closeModal()"
+                class="flex-1 rounded-xl py-3 text-sm font-semibold transition-colors cursor-pointer border"
+                [class.border-zinc-700]="isDark()"
+                [class.border-zinc-300]="!isDark()"
+                [class.text-zinc-400]="isDark()"
+                [class.text-zinc-700]="!isDark()"
+                [class.hover:bg-zinc-800]="isDark()"
+                [class.hover:bg-zinc-100]="!isDark()"
+              >
+                Annulla
+              </button>
+              <button
+                (click)="submitDeal()"
+                [disabled]="isSubmitting()"
+                class="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                @if (isSubmitting()) {
+                  Salvataggio...
+                } @else {
+                  Aggiungi Deal
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </app-grid-background>
   `,
 })
@@ -321,6 +567,50 @@ export class Pipeline {
   private isDragging = signal(false);
   private startX = signal(0);
   private scrollLeft = signal(0);
+
+  // — Modal nuovo deal —
+  showModal = signal(false);
+  isSubmitting = signal(false);
+  newDealStage = signal<DealStage>('lead');
+  newDealValue = signal(0);
+  newDealProbability = signal(25);
+
+  newDealModel = signal({ clientName: '', company: '', notes: '' });
+
+  newDealForm = form(this.newDealModel, (path) => {
+    required(path.clientName, { message: 'Nome cliente obbligatorio' });
+    required(path.company, { message: 'Azienda obbligatoria' });
+  });
+
+  openModal(): void {
+    this.showModal.set(true);
+  }
+
+  closeModal(): void {
+    this.showModal.set(false);
+  }
+
+  submitDeal(): void {
+    if (this.newDealForm.clientName().invalid() || this.newDealForm.company().invalid()) return;
+    this.isSubmitting.set(true);
+    setTimeout(() => {
+      this.pipelineStore.addDeal({
+        clientName: this.newDealForm.clientName().value(),
+        company: this.newDealForm.company().value(),
+        notes: this.newDealForm.notes().value(),
+        value: this.newDealValue(),
+        probability: this.newDealProbability(),
+        stage: this.newDealStage(),
+        expectedClose: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      });
+      this.isSubmitting.set(false);
+      this.closeModal();
+      this.newDealModel.set({ clientName: '', company: '', notes: '' });
+      this.newDealValue.set(0);
+      this.newDealProbability.set(25);
+      this.newDealStage.set('lead');
+    }, 500);
+  }
 
   startDrag(event: MouseEvent): void {
     const board = this.kanbanBoard()?.nativeElement;
@@ -406,7 +696,9 @@ export class Pipeline {
     'withComputed()',
     'patchState()',
     'withMethods()',
-    'moveToStage()',
+    'addDeal()',
+    'Signal Forms',
+    'form()',
     '@for @empty',
     'viewChild()',
     'drag-to-scroll',

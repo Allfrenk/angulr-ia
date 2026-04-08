@@ -1,5 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
+import { AuthStore } from '../../core/store/auth.store';
 import { ThemeService } from '../../core/services/theme';
 import { ClientsStore } from '../../core/store/clients.store';
 import { PipelineStore } from '../../core/store/pipeline.store';
@@ -15,19 +16,29 @@ import { GridBackground } from '../../shared/components/grid-background';
       <div class="p-8 max-w-7xl mx-auto space-y-8">
         <!-- PAGE HEADER -->
         <div>
+          <p
+            class="text-xs uppercase tracking-widest font-medium mb-1"
+            [class.text-violet-400]="isDark()"
+            [class.text-violet-600]="!isDark()"
+          >
+            Dashboard
+          </p>
           <h1
             class="text-2xl font-bold"
             [class.text-white]="isDark()"
             [class.text-zinc-900]="!isDark()"
           >
-            Dashboard
+            Bentornato
+            @if (userName()) {
+              , {{ userName() }}
+            }
           </h1>
           <p
             class="text-sm mt-1"
             [class.text-zinc-400]="isDark()"
             [class.text-zinc-600]="!isDark()"
           >
-            Panoramica del tuo CRM
+            Ecco la panoramica aggiornata del tuo CRM
           </p>
         </div>
 
@@ -255,10 +266,12 @@ import { GridBackground } from '../../shared/components/grid-background';
 })
 export class Dashboard {
   private themeService = inject(ThemeService);
+  private authStore = inject(AuthStore);
   private clientsStore = inject(ClientsStore);
   private pipelineStore = inject(PipelineStore);
 
   isDark = computed(() => this.themeService.isDark());
+  userName = computed(() => this.authStore.user()?.name?.split(' ')[0] ?? null);
 
   totalClients = this.clientsStore.totalClients;
   activeClients = this.clientsStore.activeClients;

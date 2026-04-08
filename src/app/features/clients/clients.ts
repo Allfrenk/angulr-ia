@@ -55,7 +55,9 @@ import { GridBackground } from '../../shared/components/grid-background';
               [class.text-zinc-400]="isDark()"
               [class.text-zinc-600]="!isDark()"
             >
-              {{ clientsStore.totalClients() }} clienti totali
+              {{ clientsStore.activeClients() }} attivi ·
+              {{ clientsStore.prospectClients() }} prospect ·
+              {{ clientsStore.totalClients() }} totali
             </p>
           </div>
           <button
