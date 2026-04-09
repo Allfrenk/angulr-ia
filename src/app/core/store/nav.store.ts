@@ -17,6 +17,7 @@ export const NavStore = signalStore(
       { label: 'Dashboard', route: '/app/dashboard', icon: 'layout-dashboard' },
       { label: 'Clienti', route: '/app/clients', icon: 'users' },
       { label: 'Pipeline', route: '/app/pipeline', icon: 'kanban' },
+      { label: 'Performance', route: '/app/performance', icon: 'gauge' },
     ],
   }),
 );

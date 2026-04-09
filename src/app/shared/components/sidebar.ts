@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
+  Gauge,
   Kanban,
   LayoutDashboard,
   LogOut,
@@ -22,7 +23,7 @@ import { ThemeToggle } from './theme-toggle';
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ LayoutDashboard, Users, Kanban, LogOut }),
+      useValue: new LucideIconProvider({ LayoutDashboard, Users, Kanban, LogOut, Gauge }),
     },
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

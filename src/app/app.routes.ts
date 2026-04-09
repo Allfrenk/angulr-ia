@@ -3,6 +3,7 @@ import { authGuard } from './core/guards/auth-guard';
 import { ClientDetail } from './features/clients/client-detail';
 import { Clients } from './features/clients/clients';
 import { Dashboard } from './features/dashboard/dashboard';
+import { Performance } from './features/performance/performance';
 import { Pipeline } from './features/pipeline/pipeline';
 import { Layout } from './layout/layout';
 
@@ -19,6 +20,7 @@ export const routes: Routes = [
       { path: 'clients', component: Clients },
       { path: 'clients/:id', component: ClientDetail },
       { path: 'pipeline', component: Pipeline },
+      { path: 'performance', component: Performance },
     ],
   },
   { path: '**', redirectTo: '' },
