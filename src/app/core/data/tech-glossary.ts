@@ -7,7 +7,13 @@ export const TECH_GLOSSARY: Record<string, string> = {
   OnPush:
     'Strategia di change detection che limita i controlli al solo albero del componente quando un input cambia o un signal emette. Con Zoneless è la strategia raccomandata per i componenti shared.',
 
+  // Standalone
+  Standalone:
+    'Componente, direttiva o pipe che non appartiene a nessun NgModule. Dichiara le proprie dipendenze direttamente nel campo imports del decoratore @Component. È il modello default in Angular 14+ e obbligatorio in Angular 21.',
+
   // Signals
+  Signals:
+    "Sistema di reattività fine-grained introdotto in Angular 16 e stabilizzato in Angular 20. Un signal è un wrapper attorno a un valore che notifica i consumer quando cambia. Elimina la necessità di zone.js, RxJS e markForCheck per la maggior parte dei casi d'uso.",
   'signal()':
     "Primitiva reattiva di Angular. Contiene un valore e notifica automaticamente i consumer quando cambia. Sostituisce BehaviorSubject per la maggior parte dei casi d'uso di stato locale.",
   'computed()':
@@ -15,7 +21,7 @@ export const TECH_GLOSSARY: Record<string, string> = {
   'effect()':
     'Esegue una funzione ogni volta che i signal letti al suo interno cambiano valore. Usato per side effect come aggiornare il DOM, scrivere su localStorage o triggerare chiamate API.',
   'linkedSignal()':
-    'Signal scrivibile che si resetta automaticamente quando cambia il suo source signal. Utile per stato locale che dipende da stato globale — ad esempio resettare una search quando cambia un filtro.',
+    'Signal scrivibile che si resetta automaticamente quando cambia il suo source signal. Utile per stato locale che dipende da stato globale — ad esempio resettare una search o la pagina corrente quando cambia un filtro.',
   'input()':
     'API signal-based per dichiarare gli input di un componente. Sostituisce il decoratore @Input(). Il valore è direttamente leggibile come signal nel template e nel TS senza subscribe.',
   'model()':
@@ -37,6 +43,8 @@ export const TECH_GLOSSARY: Record<string, string> = {
 
   // NgRx Signals
   SignalStore:
+    'Store reattivo di NgRx basato su signal. Alternativa leggera a Redux per la gestione dello stato globale. Si definisce con signalStore() e si compone con withState, withComputed, withMethods.',
+  'Signal Store':
     'Store reattivo di NgRx basato su signal. Alternativa leggera a Redux per la gestione dello stato globale. Si definisce con signalStore() e si compone con withState, withComputed, withMethods.',
   'signalStore()':
     'Funzione di NgRx/signals che crea uno store reattivo. Accetta feature functions come withState(), withComputed(), withMethods() per costruire lo store in modo modulare e type-safe.',
@@ -68,6 +76,8 @@ export const TECH_GLOSSARY: Record<string, string> = {
   // Template Control Flow
   '@if @else':
     'Nuova sintassi Angular per rendering condizionale. Sostituisce *ngIf con una sintassi più leggibile e type-safe. Supporta type narrowing nella branch @else.',
+  '@if / @for':
+    'Nuova sintassi built-in Angular per il control flow nel template. @if sostituisce *ngIf, @for sostituisce *ngFor con track obbligatorio. Più performante e type-safe rispetto alle direttive strutturali.',
   '@for @empty':
     "Nuova sintassi Angular per iterazione. Richiede track obbligatorio per l'ottimizzazione del DOM. @empty viene renderizzato quando la collezione è vuota, senza *ngIf aggiuntivi.",
   '@switch':
@@ -78,6 +88,8 @@ export const TECH_GLOSSARY: Record<string, string> = {
     'Trigger di @defer che carica il contenuto dopo un delay specificato. Usato per contenuto secondario che non deve bloccare il rendering principale della pagina.',
   '@defer (on viewport)':
     "Trigger di @defer che carica il contenuto quando l'elemento entra nel viewport. Usato per contenuto below-the-fold — zero rendering se l'utente non scrolla.",
+  '@defer on viewport':
+    "Trigger di @defer che carica il contenuto quando l'elemento entra nel viewport. Usato per contenuto below-the-fold — zero rendering se l'utente non scrolla.",
   '@placeholder':
     'Contenuto mostrato prima che il blocco @defer venga caricato. Deve essere leggero e non usare import lazy. Può essere un ng-container vuoto o uno skeleton.',
   '@loading':
@@ -86,32 +98,51 @@ export const TECH_GLOSSARY: Record<string, string> = {
     'Dichiarazione di variabile locale nel template Angular 21. Evita chiamate ripetute allo stesso signal o expression nel template. Migliora leggibilità e performance.',
 
   // RxJS
+  RxJS: 'Libreria per programmazione reattiva con Observable. In Angular viene usata per stream asincroni come eventi HTTP, route params, form value changes. Con Angular 21 e i signal il suo uso si riduce progressivamente, ma rimane fondamentale per operatori avanzati come debounceTime, distinctUntilChanged e switchMap.',
   'RxJS debounce':
     'Operatore RxJS che emette un valore solo dopo che è passato un intervallo di tempo senza nuove emissioni. Usato nella search per evitare chiamate ad ogni tasto premuto.',
   'debounceTime(300)':
     'Variante di debounce che aspetta 300ms di silenzio prima di emettere. Standard per le search box — bilancia reattività e performance.',
   'distinctUntilChanged()':
-    "Operatore RxJS che filtra emissioni consecutive identiche. Evita aggiornamenti inutili quando l'utente cancella e riscrive la stessa stringa.",
+    "Operatore RxJS che filtra emissioni consecutive identiche. Evita aggiornamenti inutili quando l'utente cancella e riscrive la stessa stringa. Confronto shallow per default, accetta un comparator custom.",
   'takeUntilDestroyed()':
-    'Operatore Angular che completa un Observable quando il componente viene distrutto. Sostituisce il pattern takeUntil(this.destroy$) eliminando la necessità di implementare OnDestroy.',
+    'Operatore Angular (non RxJS puro) che completa automaticamente un Observable quando il componente viene distrutto. Rileva il DestroyRef dal contesto di injection corrente. Elimina il boilerplate di OnDestroy + Subject + takeUntil.',
   'FormControl + RxJS':
     'Combinazione classica Angular: FormControl espone valueChanges come Observable RxJS, che viene trasformato con operatori prima di aggiornare lo store. Dimostra interoperabilità tra il mondo Observable e il mondo Signal.',
 
   // Routing & DI
+  RouterLink:
+    "Direttiva Angular per la navigazione dichiarativa nel template. Sostituisce href con gestione lato client — nessun reload della pagina. Accetta path come array ['/app/clients'] e queryParams opzionali per passare filtri o parametri alla route di destinazione.",
+  queryParams:
+    'Parametri URL opzionali passati tramite [queryParams] su RouterLink o router.navigate(). Usati per comunicare stato tra pagine senza store — ad esempio selezionare un filtro nella pagina di destinazione al momento della navigazione.',
   'inject()':
     "Funzione per l'injection delle dipendenze senza costruttore. Funziona in qualsiasi injection context — componenti, direttive, guard, factory function. Sostituisce il pattern constructor(private svc: Service).",
   ActivatedRoute:
     'Servizio Angular che espone i dati della route corrente come Observable. Usato con paramMap per leggere i parametri URL in modo reattivo.',
   'ActivatedRoute.paramMap':
     'Observable che emette ogni volta che i parametri della route cambiano. Convertito in signal con toSignal() per un uso reattivo e dichiarativo nel template.',
+  paramMap:
+    "Observable di ActivatedRoute che emette ogni volta che i parametri dell'URL cambiano. Usato con map(p => p.get('id')) + toSignal() per derivare l'id del cliente come signal reattivo.",
   'computed() da route param':
     "Pattern Angular 21: toSignal(route.paramMap) + computed() per derivare i dati da mostrare direttamente dall'URL. Zero ngOnInit, zero subscribe, zero gestione manuale.",
   'Lazy Routing':
     "Caricamento lazy dei componenti tramite loadComponent(). Angular scarica il JS del componente solo quando l'utente naviga alla route corrispondente, riducendo il bundle iniziale.",
   'auth guard':
     "CanActivateFn che protegge le route /app/*. Se l'utente non è autenticato viene rediretto alla landing. Legge isAuthenticated() dallo store — signal-based, zero subscribe.",
+  'Location.back()':
+    "Servizio Angular di @angular/common che naviga alla voce precedente nella history del browser. Equivalente al tasto back del browser — più robusto di router.navigate() hardcoded perché rispetta la history reale dell'utente.",
 
-  // Patterns
+  // Methods
+  'updateClient()':
+    "Metodo del ClientsStore che aggiorna un cliente esistente con patchState(). Usa .map() per creare un nuovo array immutabile — il cliente con l'id corrispondente viene sostituito, gli altri rimangono invariati. Dimostra il pattern di aggiornamento immutabile in NgRx Signals.",
+  'addDeal()':
+    'Metodo del PipelineStore che aggiunge un nuovo deal allo store con patchState(). Usa lo spread operator per creare un nuovo array immutabile. Il deal ottiene un id univoco tramite Date.now().toString().',
+  'moveToStage()':
+    'Metodo del PipelineStore che sposta un deal in un nuovo stage. Usa patchState() con .map() per aggiornare immutabilmente solo il deal target, lasciando invariati tutti gli altri.',
+
+  // UI Patterns
+  'drag-to-scroll':
+    'Pattern UX per scorrere contenuto orizzontale con il drag del mouse. Implementato con mousedown/mousemove/mouseup e viewChild<ElementRef>() per accedere al container nativo. isDragging è un signal locale che coordina lo stato del drag senza logica asincrona.',
   'immutable state update':
     'Pattern di aggiornamento stato senza mutazione diretta. Con patchState() si passa un oggetto parziale che viene merged — .map() crea un nuovo array invece di modificare quello esistente.',
   'readonly state':
@@ -120,4 +151,6 @@ export const TECH_GLOSSARY: Record<string, string> = {
     "Pattern common per input password: signal booleano che alterna il type dell'input tra password e text. computed() deriva il tipo dall'input rendendo il template dichiarativo.",
   isLoading:
     "Signal booleano per gestire lo stato di caricamento di un'operazione asincrona. Disabilita il bottone di submit e mostra feedback visivo durante l'attesa.",
+  'pagination signal':
+    'Paginazione implementata con signal puri. currentPage è un linkedSignal che si resetta a 1 automaticamente quando cambia il filtro o la search — evitando di mostrare una pagina inesistente dopo un cambio di contesto.',
 };

@@ -1,16 +1,18 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/store/auth.store';
 import { ThemeService } from '../../core/services/theme';
 import { ClientsStore } from '../../core/store/clients.store';
 import { PipelineStore } from '../../core/store/pipeline.store';
+import { getTagClasses } from '../../core/data/tags';
 import { FeaturePill } from '../../shared/components/feature-pill';
 import { GridBackground } from '../../shared/components/grid-background';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [GridBackground, FeaturePill, CurrencyPipe],
+  imports: [GridBackground, FeaturePill, CurrencyPipe, RouterLink],
   template: `
     <app-grid-background [isDark]="isDark()" [disableSpotlight]="true">
       <div class="p-8 max-w-7xl mx-auto space-y-8">
@@ -44,8 +46,11 @@ import { GridBackground } from '../../shared/components/grid-background';
 
         <!-- KPI GRID -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            class="rounded-2xl border p-6 flex flex-col gap-2"
+          <!-- Totale Clienti: resetta il filtro nello store prima di navigare -->
+          <a
+            [routerLink]="['/app/clients']"
+            (click)="clientsStore.setFilter('all')"
+            class="rounded-2xl border p-6 flex flex-col gap-2 cursor-pointer hover:border-violet-500/60 transition-all"
             [class.glass-card-dark]="isDark()"
             [class.glass-card-light]="!isDark()"
             [class.border-zinc-800]="isDark()"
@@ -64,9 +69,13 @@ import { GridBackground } from '../../shared/components/grid-background';
             >
               {{ totalClients() }}
             </span>
-          </div>
-          <div
-            class="rounded-2xl border p-6 flex flex-col gap-2"
+          </a>
+
+          <!-- Clienti Attivi: passa queryParam filter=active -->
+          <a
+            [routerLink]="['/app/clients']"
+            [queryParams]="{ filter: 'active' }"
+            class="rounded-2xl border p-6 flex flex-col gap-2 cursor-pointer hover:border-violet-500/60 transition-all"
             [class.glass-card-dark]="isDark()"
             [class.glass-card-light]="!isDark()"
             [class.border-zinc-800]="isDark()"
@@ -79,9 +88,12 @@ import { GridBackground } from '../../shared/components/grid-background';
               >Clienti Attivi</span
             >
             <span class="text-3xl font-bold text-green-400">{{ activeClients() }}</span>
-          </div>
-          <div
-            class="rounded-2xl border p-6 flex flex-col gap-2"
+          </a>
+
+          <!-- Valore Pipeline -->
+          <a
+            [routerLink]="['/app/pipeline']"
+            class="rounded-2xl border p-6 flex flex-col gap-2 cursor-pointer hover:border-violet-500/60 transition-all"
             [class.glass-card-dark]="isDark()"
             [class.glass-card-light]="!isDark()"
             [class.border-zinc-800]="isDark()"
@@ -96,9 +108,11 @@ import { GridBackground } from '../../shared/components/grid-background';
             <span class="text-3xl font-bold text-violet-400">
               {{ totalPipelineValue() | currency: 'EUR' : 'symbol' : '1.0-0' : 'it' }}
             </span>
-          </div>
+          </a>
+
+          <!-- Valore Pesato: non cliccabile -->
           <div
-            class="rounded-2xl border p-6 flex flex-col gap-2"
+            class="rounded-2xl border p-6 flex flex-col gap-2 cursor-default"
             [class.glass-card-dark]="isDark()"
             [class.glass-card-light]="!isDark()"
             [class.border-zinc-800]="isDark()"
@@ -118,7 +132,7 @@ import { GridBackground } from '../../shared/components/grid-background';
 
         <!-- TWO COLUMN LAYOUT -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Clienti Recenti — render diretto -->
+          <!-- Clienti Recenti — solo il nome è cliccabile -->
           <div
             class="rounded-2xl border p-6"
             [class.glass-card-dark]="isDark()"
@@ -141,13 +155,16 @@ import { GridBackground } from '../../shared/components/grid-background';
                   [class.border-zinc-200]="!isDark()"
                 >
                   <div>
-                    <p
-                      class="text-sm font-medium"
+                    <a
+                      [routerLink]="['/app/clients', client.id]"
+                      class="text-sm font-medium cursor-pointer transition-colors"
                       [class.text-white]="isDark()"
                       [class.text-zinc-900]="!isDark()"
+                      [class.hover:text-violet-400]="isDark()"
+                      [class.hover:text-violet-600]="!isDark()"
                     >
                       {{ client.name }}
-                    </p>
+                    </a>
                     <p
                       class="text-xs"
                       [class.text-zinc-400]="isDark()"
@@ -155,9 +172,16 @@ import { GridBackground } from '../../shared/components/grid-background';
                     >
                       {{ client.company }}
                     </p>
+                    @if (client.tags.length > 0) {
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        @for (tag of client.tags; track tag) {
+                          <span [class]="getTagClasses(tag, isDark())">{{ tag }}</span>
+                        }
+                      </div>
+                    }
                   </div>
                   <span
-                    class="rounded-full px-2 py-0.5 text-xs border"
+                    class="rounded-full px-2 py-0.5 text-xs border shrink-0"
                     [class]="getStatusBadgeClass(client.status)"
                   >
                     {{ getStatusLabel(client.status) }}
@@ -167,7 +191,7 @@ import { GridBackground } from '../../shared/components/grid-background';
             </div>
           </div>
 
-          <!-- Deal Attivi — render diretto -->
+          <!-- Deal Attivi — solo il nome è cliccabile -->
           <div
             class="rounded-2xl border p-6"
             [class.glass-card-dark]="isDark()"
@@ -190,13 +214,27 @@ import { GridBackground } from '../../shared/components/grid-background';
                   [class.border-zinc-200]="!isDark()"
                 >
                   <div>
-                    <p
-                      class="text-sm font-medium"
-                      [class.text-white]="isDark()"
-                      [class.text-zinc-900]="!isDark()"
-                    >
-                      {{ deal.clientName }}
-                    </p>
+                    @let cId = getClientIdByName(deal.clientName);
+                    @if (cId) {
+                      <a
+                        [routerLink]="['/app/clients', cId]"
+                        class="text-sm font-medium cursor-pointer transition-colors"
+                        [class.text-white]="isDark()"
+                        [class.text-zinc-900]="!isDark()"
+                        [class.hover:text-violet-400]="isDark()"
+                        [class.hover:text-violet-600]="!isDark()"
+                      >
+                        {{ deal.clientName }}
+                      </a>
+                    } @else {
+                      <p
+                        class="text-sm font-medium"
+                        [class.text-white]="isDark()"
+                        [class.text-zinc-900]="!isDark()"
+                      >
+                        {{ deal.clientName }}
+                      </p>
+                    }
                     <p
                       class="text-xs"
                       [class.text-zinc-400]="isDark()"
@@ -267,7 +305,7 @@ import { GridBackground } from '../../shared/components/grid-background';
 export class Dashboard {
   private themeService = inject(ThemeService);
   private authStore = inject(AuthStore);
-  private clientsStore = inject(ClientsStore);
+  protected clientsStore = inject(ClientsStore);
   private pipelineStore = inject(PipelineStore);
 
   isDark = computed(() => this.themeService.isDark());
@@ -280,12 +318,23 @@ export class Dashboard {
   weightedValue = this.pipelineStore.weightedValue;
   activeDeals = this.pipelineStore.activeDeals;
 
+  getTagClasses = getTagClasses;
+
+  getClientIdByName(name: string): string | null {
+    return (
+      this.clientsStore.clients().find((c) => c.name.toLowerCase() === name.toLowerCase())?.id ??
+      null
+    );
+  }
+
   patterns = [
     'SignalStore',
     'withComputed()',
     'computed()',
     'inject()',
-    '@defer on viewport',
+    'RouterLink',
+    'queryParams',
+    '@defer (on viewport)',
     '@placeholder',
     '@loading',
     '@for @empty',

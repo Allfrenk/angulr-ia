@@ -1,5 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { form, FormField, required } from '@angular/forms/signals';
 import {
   ChevronLeft,
@@ -12,6 +13,7 @@ import {
   X,
 } from 'lucide-angular';
 import { ThemeService } from '../../core/services/theme';
+import { ClientsStore } from '../../core/store/clients.store';
 import { Deal, DealStage, PipelineStore, STAGES } from '../../core/store/pipeline.store';
 import { FeaturePill } from '../../shared/components/feature-pill';
 import { GridBackground } from '../../shared/components/grid-background';
@@ -19,7 +21,7 @@ import { GridBackground } from '../../shared/components/grid-background';
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe, FormField],
+  imports: [GridBackground, FeaturePill, LucideAngularModule, CurrencyPipe, FormField, RouterLink],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -169,22 +171,43 @@ import { GridBackground } from '../../shared/components/grid-background';
                   [class.border-zinc-800]="isDark()"
                   [class.border-zinc-300]="!isDark()"
                 >
-                  <div>
-                    <p
-                      class="text-sm font-semibold"
+                  @let clientId = getClientIdByName(deal.clientName);
+                  @if (clientId) {
+                    <a
+                      [routerLink]="['/app/clients', clientId]"
+                      (click)="$event.stopPropagation()"
+                      (mousedown)="$event.stopPropagation()"
+                      class="cursor-pointer hover:text-violet-400 transition-colors"
                       [class.text-white]="isDark()"
                       [class.text-zinc-900]="!isDark()"
                     >
-                      {{ deal.clientName }}
-                    </p>
-                    <p
-                      class="text-xs"
-                      [class.text-zinc-400]="isDark()"
-                      [class.text-zinc-600]="!isDark()"
-                    >
-                      {{ deal.company }}
-                    </p>
-                  </div>
+                      <p class="text-sm font-semibold">{{ deal.clientName }}</p>
+                      <p
+                        class="text-xs"
+                        [class.text-zinc-400]="isDark()"
+                        [class.text-zinc-600]="!isDark()"
+                      >
+                        {{ deal.company }}
+                      </p>
+                    </a>
+                  } @else {
+                    <div>
+                      <p
+                        class="text-sm font-semibold"
+                        [class.text-white]="isDark()"
+                        [class.text-zinc-900]="!isDark()"
+                      >
+                        {{ deal.clientName }}
+                      </p>
+                      <p
+                        class="text-xs"
+                        [class.text-zinc-400]="isDark()"
+                        [class.text-zinc-600]="!isDark()"
+                      >
+                        {{ deal.company }}
+                      </p>
+                    </div>
+                  }
 
                   <p class="text-base font-bold text-violet-400">
                     {{ deal.value | currency: 'EUR' : 'symbol' : '1.0-0' : 'it' }}
@@ -557,6 +580,7 @@ import { GridBackground } from '../../shared/components/grid-background';
 export class Pipeline {
   private themeService = inject(ThemeService);
   protected pipelineStore = inject(PipelineStore);
+  private clientsStore = inject(ClientsStore);
 
   isDark = computed(() => this.themeService.isDark());
 
@@ -645,6 +669,13 @@ export class Pipeline {
       board.scrollLeft -= 300;
       event.preventDefault();
     }
+  }
+
+  getClientIdByName(clientName: string): string | null {
+    const client = this.clientsStore
+      .clients()
+      .find((c) => c.name.toLowerCase() === clientName.toLowerCase());
+    return client?.id ?? null;
   }
 
   getDealsForStage(stageKey: DealStage): Deal[] {

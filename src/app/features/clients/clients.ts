@@ -1,9 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { email, form, FormField, required } from '@angular/forms/signals';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   LUCIDE_ICONS,
   LucideAngularModule,
@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-angular';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { getTagClasses } from '../../core/data/tags';
 import { ThemeService } from '../../core/services/theme';
 import { ClientsStore } from '../../core/store/clients.store';
 import { FeaturePill } from '../../shared/components/feature-pill';
@@ -75,13 +76,13 @@ import { GridBackground } from '../../shared/components/grid-background';
             <lucide-icon
               name="search"
               [size]="16"
-              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
               [color]="isDark() ? '#71717a' : '#52525b'"
             />
             <input
               [formControl]="searchControl"
-              placeholder="Cerca per nome, azienda, email..."
-              class="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-colors"
+              placeholder="Cerca per nome, azienda, email, telefono..."
+              class="w-full pl-12 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-colors"
               [class.bg-zinc-900]="isDark()"
               [class.bg-white]="!isDark()"
               [class.border-zinc-700]="isDark()"
@@ -123,7 +124,7 @@ import { GridBackground } from '../../shared/components/grid-background';
 
         <!-- LISTA CLIENTI — render diretto -->
         <div class="space-y-3">
-          @for (client of clientsStore.filteredClients(); track client.id) {
+          @for (client of paginatedClients(); track client.id) {
             <div
               (click)="navigateToClient(client.id)"
               (keypress)="navigateToClient(client.id)"
@@ -155,6 +156,13 @@ import { GridBackground } from '../../shared/components/grid-background';
                 >
                   {{ client.company }} · {{ client.email }}
                 </p>
+                @if (client.tags.length > 0) {
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    @for (tag of client.tags; track tag) {
+                      <span [class]="getTagClasses(tag, isDark())">{{ tag }}</span>
+                    }
+                  </div>
+                }
               </div>
               <span
                 class="rounded-full px-2 py-0.5 text-xs border shrink-0 {{
@@ -177,6 +185,57 @@ import { GridBackground } from '../../shared/components/grid-background';
                 class="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
               >
                 Aggiungi il primo cliente
+              </button>
+            </div>
+          }
+
+          <!-- PAGINAZIONE -->
+          @if (totalPages() > 1) {
+            <div class="flex items-center justify-center gap-2 pt-4">
+              <button
+                (click)="goToPage(currentPage() - 1)"
+                [disabled]="currentPage() === 1"
+                class="px-3 py-1.5 rounded-lg text-xs border transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                [class.border-zinc-700]="isDark()"
+                [class.border-zinc-300]="!isDark()"
+                [class.text-zinc-400]="isDark()"
+                [class.text-zinc-600]="!isDark()"
+                [class.hover:bg-zinc-800]="isDark()"
+                [class.hover:bg-zinc-100]="!isDark()"
+              >
+                ‹ Prec
+              </button>
+
+              @for (page of pages(); track page) {
+                <button
+                  (click)="goToPage(page)"
+                  class="w-8 h-8 rounded-lg text-xs border transition-all cursor-pointer font-medium"
+                  [class.bg-violet-600]="currentPage() === page"
+                  [class.border-violet-600]="currentPage() === page"
+                  [class.text-white]="currentPage() === page"
+                  [class.border-zinc-700]="isDark() && currentPage() !== page"
+                  [class.border-zinc-300]="!isDark() && currentPage() !== page"
+                  [class.text-zinc-400]="isDark() && currentPage() !== page"
+                  [class.text-zinc-600]="!isDark() && currentPage() !== page"
+                  [class.hover:bg-zinc-800]="isDark() && currentPage() !== page"
+                  [class.hover:bg-zinc-100]="!isDark() && currentPage() !== page"
+                >
+                  {{ page }}
+                </button>
+              }
+
+              <button
+                (click)="goToPage(currentPage() + 1)"
+                [disabled]="currentPage() === totalPages()"
+                class="px-3 py-1.5 rounded-lg text-xs border transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                [class.border-zinc-700]="isDark()"
+                [class.border-zinc-300]="!isDark()"
+                [class.text-zinc-400]="isDark()"
+                [class.text-zinc-600]="!isDark()"
+                [class.hover:bg-zinc-800]="isDark()"
+                [class.hover:bg-zinc-100]="!isDark()"
+              >
+                Succ ›
               </button>
             </div>
           }
@@ -395,16 +454,62 @@ export class Clients {
   private themeService = inject(ThemeService);
   protected clientsStore = inject(ClientsStore);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
 
   isDark = computed(() => this.themeService.isDark());
 
   searchControl = new FormControl('');
 
+  readonly PAGE_SIZE = 6;
+
+  currentPage = linkedSignal({
+    source: () => ({
+      filter: this.clientsStore.statusFilter(),
+      search: this.clientsStore.searchQuery(),
+    }),
+    computation: () => 1,
+  });
+
+  paginatedClients = computed(() => {
+    const all = this.clientsStore.filteredClients();
+    const page = this.currentPage();
+    const start = (page - 1) * this.PAGE_SIZE;
+    return all.slice(start, start + this.PAGE_SIZE);
+  });
+
+  totalPages = computed(() =>
+    Math.ceil(this.clientsStore.filteredClients().length / this.PAGE_SIZE),
+  );
+
+  pages = computed(() => Array.from({ length: this.totalPages() }, (_, i) => i + 1));
+
+  getTagClasses = getTagClasses;
+
   constructor() {
+    // Reset filtro a 'all' ogni volta che si entra nella pagina
+    this.clientsStore.setFilter('all');
+
+    // Poi sovrascrivi solo se arriva un queryParam esplicito
+    const initialFilter = this.route.snapshot.queryParamMap.get('filter') as
+      | 'all'
+      | 'active'
+      | 'inactive'
+      | 'prospect'
+      | null;
+    if (initialFilter && ['active', 'inactive', 'prospect'].includes(initialFilter)) {
+      this.clientsStore.setFilter(initialFilter);
+    }
+
     this.searchControl.valueChanges
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((q) => this.clientsStore.setSearch(q ?? ''));
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
   }
 
   filters: { key: 'all' | 'active' | 'inactive' | 'prospect'; label: string }[] = [
@@ -493,13 +598,16 @@ export class Clients {
     'SignalStore',
     'filteredClients computed',
     'RxJS debounce',
-    'distinctUntilChanged',
-    'takeUntilDestroyed',
+    'distinctUntilChanged()',
+    'takeUntilDestroyed()',
     'Signal Forms',
     'form()',
     'FormField',
     'required()',
     'email()',
+    'pagination signal',
+    'linkedSignal()',
+    'queryParams',
     '@defer on viewport',
     'signal()',
     'inject()',

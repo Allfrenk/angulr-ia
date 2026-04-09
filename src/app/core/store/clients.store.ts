@@ -130,7 +130,8 @@ export const ClientsStore = signalStore(
           (c) =>
             c.name.toLowerCase().includes(q) ||
             c.company.toLowerCase().includes(q) ||
-            c.email.toLowerCase().includes(q),
+            c.email.toLowerCase().includes(q) ||
+            c.phone.replace(/\s/g, '').includes(q.replace(/\s/g, '')),
         );
       }
       if (statusFilter() !== 'all') {

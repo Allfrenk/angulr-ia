@@ -1,8 +1,8 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, Location } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { email, form, FormField, required } from '@angular/forms/signals';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import {
   ArrowLeft,
   Building2,
@@ -13,10 +13,12 @@ import {
   LucideIconProvider,
   Mail,
   Phone,
+  Plus,
   Tag,
   X,
 } from 'lucide-angular';
 import { map } from 'rxjs/operators';
+import { getTagClasses, PREDEFINED_TAGS } from '../../core/data/tags';
 import { ThemeService } from '../../core/services/theme';
 import { Client, ClientsStore } from '../../core/store/clients.store';
 import { FeaturePill } from '../../shared/components/feature-pill';
@@ -69,7 +71,17 @@ const MOCK_INTERACTIONS: Interaction[] = [
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ ArrowLeft, Mail, Phone, Building2, Tag, Clock, Edit, X }),
+      useValue: new LucideIconProvider({
+        ArrowLeft,
+        Mail,
+        Phone,
+        Building2,
+        Tag,
+        Clock,
+        Edit,
+        X,
+        Plus,
+      }),
     },
   ],
   template: `
@@ -237,17 +249,7 @@ const MOCK_INTERACTIONS: Interaction[] = [
               </div>
               <div class="flex flex-wrap gap-2">
                 @for (tag of c.tags; track tag) {
-                  <span
-                    class="rounded-full px-3 py-1 text-xs border"
-                    [class.bg-zinc-800]="isDark()"
-                    [class.bg-zinc-100]="!isDark()"
-                    [class.border-zinc-700]="isDark()"
-                    [class.border-zinc-300]="!isDark()"
-                    [class.text-zinc-400]="isDark()"
-                    [class.text-zinc-700]="!isDark()"
-                  >
-                    {{ tag }}
-                  </span>
+                  <span [class]="getTagClasses(tag, isDark())">{{ tag }}</span>
                 }
               </div>
             </div>
@@ -529,6 +531,60 @@ const MOCK_INTERACTIONS: Interaction[] = [
                 />
               </div>
 
+              <!-- TAG -->
+              <div class="flex flex-col gap-2">
+                <p
+                  class="text-xs font-medium uppercase tracking-wider"
+                  [class.text-zinc-400]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                >
+                  Tag attivi
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  @for (tag of editTags(); track tag) {
+                    <span class="flex items-center gap-1 {{ getTagClasses(tag, isDark()) }}">
+                      {{ tag }}
+                      <button
+                        (click)="removeTag(tag)"
+                        class="ml-0.5 hover:opacity-70 transition-opacity cursor-pointer leading-none"
+                      >
+                        <lucide-icon name="x" [size]="10" />
+                      </button>
+                    </span>
+                  }
+                </div>
+                <p
+                  class="text-xs"
+                  [class.text-zinc-500]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                >
+                  Aggiungi tag:
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  @for (t of predefinedTags; track t.label) {
+                    @if (!editTags().includes(t.label)) {
+                      <button
+                        (click)="addTag(t.label)"
+                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border cursor-pointer hover:opacity-80 transition-opacity"
+                        [class]="getTagClasses(t.label, isDark())"
+                      >
+                        <lucide-icon name="plus" [size]="10" />
+                        {{ t.label }}
+                      </button>
+                    }
+                  }
+                </div>
+                <p
+                  class="text-xs leading-relaxed mt-1"
+                  [class.text-zinc-500]="isDark()"
+                  [class.text-zinc-600]="!isDark()"
+                >
+                  I tag sono definiti in una mappa predefinita (<code>tags.ts</code>). In un'app
+                  reale i nuovi tag verrebbero salvati su DB per garantire persistenza e
+                  condivisione tra utenti.
+                </p>
+              </div>
+
               <!-- Status -->
               <div class="flex flex-col gap-1">
                 <label
@@ -592,7 +648,7 @@ export class ClientDetail {
   private themeService = inject(ThemeService);
   private clientsStore = inject(ClientsStore);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private location = inject(Location);
 
   isDark = computed(() => this.themeService.isDark());
 
@@ -606,10 +662,14 @@ export class ClientDetail {
 
   interactions = MOCK_INTERACTIONS;
 
+  getTagClasses = getTagClasses;
+  predefinedTags = PREDEFINED_TAGS;
+
   // — Edit modal —
   showEditModal = signal(false);
   isSaving = signal(false);
   editStatus = signal<'active' | 'inactive' | 'prospect'>('active');
+  editTags = signal<string[]>([]);
 
   editModel = signal({ name: '', email: '', phone: '', company: '' });
 
@@ -623,7 +683,18 @@ export class ClientDetail {
   openEditModal(c: Client): void {
     this.editModel.set({ name: c.name, email: c.email, phone: c.phone, company: c.company });
     this.editStatus.set(c.status);
+    this.editTags.set([...c.tags]);
     this.showEditModal.set(true);
+  }
+
+  addTag(tag: string): void {
+    if (!this.editTags().includes(tag)) {
+      this.editTags.update((tags) => [...tags, tag]);
+    }
+  }
+
+  removeTag(tag: string): void {
+    this.editTags.update((tags) => tags.filter((t) => t !== tag));
   }
 
   closeEditModal(): void {
@@ -642,6 +713,7 @@ export class ClientDetail {
         phone: this.editForm.phone().value(),
         company: this.editForm.company().value(),
         status: this.editStatus(),
+        tags: this.editTags(),
       });
       this.isSaving.set(false);
       this.closeEditModal();
@@ -674,7 +746,7 @@ export class ClientDetail {
   }
 
   goBack(): void {
-    this.router.navigate(['/app/clients']);
+    this.location.back();
   }
 
   patterns = [
