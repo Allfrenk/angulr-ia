@@ -118,13 +118,13 @@ import { GridBackground } from '../../shared/components/grid-background';
         <!-- KANBAN BOARD -->
         <div
           #kanbanBoard
-          class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide cursor-grab active:cursor-grabbing select-none"
           (mousedown)="startDrag($event)"
           (mousemove)="onDrag($event)"
           (mouseup)="endDrag()"
           (mouseleave)="endDrag()"
           (keydown)="onKeyDown($event)"
           tabindex="0"
+          class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide select-none cursor-default focus:outline-none"
         >
           @for (stage of stages; track stage.key) {
             <div class="shrink-0 w-72 flex flex-col gap-3">
