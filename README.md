@@ -1,137 +1,223 @@
-# Angular Starter 2026
+<div align="center">
 
-Production-ready Angular 21 boilerplate with 2026 best practices baked in. Zoneless, signal-first, fully linted, auto-formatted, and CI-ready out of the box.
+# angulr-ia · CRM Demo
 
----
+**A micro-CRM built to showcase Angular 21's most modern features**
 
-## Stack & Architectural Decisions
+[![Angular](https://img.shields.io/badge/Angular-21.2-DD0031?style=flat-square&logo=angular)](https://angular.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![NgRx Signals](https://img.shields.io/badge/NgRx-Signals-BA2BD2?style=flat-square)](https://ngrx.io)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com)
+[![Zoneless](https://img.shields.io/badge/Zoneless-default-22C55E?style=flat-square)](https://angular.dev/guide/zoneless)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=flat-square&logo=vercel)](https://microcrm-angular21.vercel.app)
 
-Every tool here was chosen deliberately. This section explains the *why*, not just the *what*.
+[Live Demo](https://microcrm-angular21.vercel.app) · [Source Code](https://github.com/Allfrenk/angulr-ia)
 
-### Angular 21
-
-The current active LTS release. Angular 21 ships stable Zoneless change detection and experimental Signal Forms — both of which this starter adopts. Using the latest active version means access to the best performance primitives Angular has ever shipped, with long-term support and a clear upgrade path.
-
-### Zoneless Change Detection
-
-`zone.js` has been removed entirely. Change detection is driven by Signals via `provideZonelessChangeDetection()` in `app.config.ts`.
-
-**Why it matters:**
-- ~33KB off the initial bundle (zone.js patch file eliminated)
-- 30–40% faster rendering — no more dirty-checking every async operation
-- Clean, readable stack traces — no zone frames polluting the call stack
-- Native `async/await` and `Promise` work as expected without patching
-
-### `ChangeDetectionStrategy.OnPush` by Default
-
-Every component in this starter uses `OnPush`. The ESLint rule `@angular-eslint/prefer-on-push-component-change-detection` is set to `error`, so forgetting it breaks the lint check.
-
-With Zoneless, `OnPush` is not just a performance hint — it is the correct default. The component tree only updates when a Signal emits a new value or `markForCheck()` is called explicitly. No surprise re-renders.
-
-### Signals
-
-Angular's native fine-grained reactivity primitive. Used for all local component state instead of `BehaviorSubject` / `Observable` chains.
-
-**Why not RxJS for local state?** RxJS remains the right tool for async streams, HTTP, and complex event composition. But for `count`, `isOpen`, `selectedItem` — a `signal()` is simpler, more readable, and integrates directly with the template without `async` pipe overhead.
-
-### Tailwind CSS v4
-
-Utility-first CSS configured via `@tailwindcss/postcss` (PostCSS pipeline, compatible with `@angular/build:application`).
-
-**Why v4 specifically:**
-- Zero dead CSS in production — only classes present in source files are emitted
-- No naming conflicts with Angular's encapsulated component styles
-- v4 drops the config file requirement: content scanning is automatic, `@import "tailwindcss"` is the entire setup
-- The `src/tailwind.css` entry file keeps Tailwind out of the Sass pipeline entirely, avoiding deprecation warnings
-
-### Vitest
-
-The default test runner for Angular 21 projects — Karma has been removed from the Angular CLI. Vitest integrates natively with the esbuild/Vite pipeline used by `@angular/build:application`.
-
-**vs Jest:** Vitest reuses the same Vite transform already running for the build. No separate Babel config, no module aliasing duplication. On Vite-based projects it runs 3–8x faster than Jest cold-start. In CI, `CI=true` is auto-detected and Vitest exits after a single run — no flags required.
-
-### ESLint Flat Config
-
-`eslint.config.js` uses the modern flat config format (ESLint ≥ 9). The legacy `.eslintrc` format is deprecated and will be removed.
-
-Custom rules enforced beyond the angular-eslint recommended set:
-
-| Rule | Level | Reason |
-|---|---|---|
-| `@typescript-eslint/no-explicit-any` | warn | Signals a type coverage gap worth reviewing |
-| `@angular-eslint/prefer-on-push-component-change-detection` | error | Enforces the architectural decision at the tooling level |
-
-### Prettier
-
-Auto-formatting on save and on commit. No configuration debates. The default Prettier ruleset is the standard — deviating from it requires a conscious decision, not a habit.
-
-### Husky + lint-staged
-
-Git hooks managed by Husky run lint-staged before every commit. Only staged files are processed — not the entire codebase — so the hook completes in under a second regardless of project size.
-
-**What runs on commit:**
-- `*.ts` — `eslint --fix` then `prettier --write`
-- `*.html` — `prettier --write`
-- `*.scss` — `prettier --write`
-
-Non-conforming code cannot be committed. The hook is the last line of defense before CI.
-
-### GitHub Actions
-
-CI pipeline defined in `.github/workflows/ci.yml`. Triggers on every push and pull request to `main`.
-
-Pipeline steps: checkout → Node 22 setup (with `npm` cache) → `npm ci` → lint → production build → tests.
-
-Fast feedback: a broken lint or failing test surfaces before the PR is reviewed, not after.
+</div>
 
 ---
 
-## Getting Started
+## What is this?
+
+`angulr-ia` is a **portfolio-grade CRM demo** built with Angular 21, designed to demonstrate real-world usage of the framework's most modern APIs — not just toy examples.
+
+Every feature in this app serves a dual purpose: it functions as a working CRM (clients, pipeline, dashboard) and it documents itself, explaining to the reader exactly which Angular 21 patterns are being used and why.
+
+> **No backend. No external APIs. All data lives in NgRx Signal Stores.**
+> Refreshing the page resets the state — by design. This is a frontend architecture showcase, not a production app.
+
+---
+
+## Who is this for?
+
+This project is aimed at **technical recruiters and senior engineers** evaluating Angular 21 proficiency. It covers:
+
+- Architectural decisions (Zoneless, OnPush, Signal-first state)
+- Modern reactive patterns without boilerplate
+- Experimental APIs used correctly (Signal Forms, `resource()`)
+- Code organization and component composition
+
+Every page has an interactive "Patterns used" section with clickable pills that explain each Angular 21 concept — making the codebase self-documenting for technical interviews.
+
+---
+
+## Screenshots
+
+<div align="center">
+
+| Dashboard (dark) | Pipeline Kanban |
+|:---:|:---:|
+| ![Dashboard](docs/screenshot-dashboard.png) | ![Pipeline](docs/screenshot-pipeline.png) |
+
+| Clients with search | Client Detail |
+|:---:|:---:|
+| ![Clients](docs/screenshot-clients.png) | ![Detail](docs/screenshot-detail.png) |
+
+</div>
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Angular 21.2 — Zoneless, Standalone |
+| State | NgRx Signal Store (`signalStore`, `withComputed`, `patchState`) |
+| Forms | Signal Forms (`form()`, `FormField`, `required()`) — experimental |
+| Styling | Tailwind CSS v4 with `@tailwindcss/postcss` |
+| Icons | Lucide Angular |
+| Testing | Vitest |
+| Linting | ESLint flat config |
+| Deploy | Vercel |
+
+---
+
+## Angular 21 Features — Complete Coverage
+
+### Signals Core
+`signal()` · `computed()` · `effect()` · `linkedSignal()` · `resource()` · `input()` · `viewChild()` · `toSignal()`
+
+### NgRx Signal Store
+`signalStore()` · `withState()` · `withComputed()` · `withMethods()` · `patchState()`
+
+### Signal Forms *(experimental)*
+`form()` · `FormField` directive · `required()` · `email()` · field state signals (`touched()`, `invalid()`, `errors()`)
+
+### Template Control Flow
+`@if @else` · `@for @empty` · `@switch` · `@defer` (on timer, on viewport) · `@placeholder` · `@loading` · `@let`
+
+### Architecture
+Zoneless change detection · OnPush on shared components · Standalone components · Lazy routing · `CanActivateFn` guard · `Location.back()` · `takeUntilDestroyed()`
+
+### RxJS Interop
+`debounceTime` · `distinctUntilChanged` · `takeUntilDestroyed` · `FormControl.valueChanges` → Signal Store
+
+---
+
+## Pages
+
+### 🏠 Landing
+Animated spotlight effect tracking mouse position. SpotlightStore manages mouse coordinates with `withComputed()` deriving the gradient style. Dark/light theme toggle with `localStorage` persistence.
+
+### 🔐 Login
+Signal Forms demo with read-only pre-filled credentials (`demo@crm.io` / `demo1234`). Demonstrates `form()`, `FormField` directive, and signal-based loading state. Auth state persisted in `localStorage` via `AuthStore`.
+
+### 📊 Dashboard
+Four KPI cards derived from `ClientsStore` and `PipelineStore` computed signals. Recent clients and active deals with direct signal rendering. `resource()` card simulating an async API call with skeleton loading states (`isLoading()`, `error()`, `value()`). Pattern pills section with `@defer (on timer(500ms))`.
+
+### 👥 Clients
+Full-featured client list with:
+- **RxJS search pipeline**: `FormControl` → `debounceTime(300)` → `distinctUntilChanged()` → `takeUntilDestroyed()` → `ClientsStore.setSearch()`
+- **Signal pagination**: `linkedSignal()` resets `currentPage` to 1 automatically on filter/search change
+- **Status filters**: reading initial filter from route `queryParams` (set by dashboard KPI links)
+- **Add client modal**: Signal Forms with validation
+
+### 👤 Client Detail
+Route param extracted with `toSignal(route.paramMap)`. Client derived as a `computed()` signal — reactive to route changes without `ngOnInit`. Editable fields with Signal Forms. Editable tags with predefined color map (`tags.ts`). Interaction history with `@defer (on viewport)`.
+
+### 🎯 Pipeline
+Six-stage Kanban board with:
+- `dealsByStage` — `computed()` returning `Map<DealStage, Deal[]>`
+- `moveToStage()` — immutable `patchState()` update
+- Horizontal drag-to-scroll with `viewChild<ElementRef>()`
+- `@let` for cached computed values inside `@for`
+- Deal name links to client detail via `ClientsStore` lookup
+- Add deal modal with Signal Forms
+
+### ⚡ Performance
+Build bundle analysis with real production sizes. Zoneless performance metrics vs zone.js (Angular team benchmarks). Full Angular 21 feature coverage checklist.
+
+---
+
+## Architecture Decisions
+
+### Why Zoneless?
+`zone.js` monkey-patches browser async APIs and triggers change detection on every async callback — even unrelated ones. Removing it saves ~33KB bundle and eliminates unnecessary CD cycles. In this app, all state updates flow through signal stores, so `provideZonelessChangeDetection()` is a natural fit.
+
+### Why Signal Store over Redux?
+NgRx Signal Store is leaner than the classic Action/Reducer/Effect pattern for this scale of app. `withComputed()` replaces selectors, `withMethods()` replaces effects for sync operations. The store is tree-shakable and doesn't require module registration.
+
+### Why Signal Forms over Reactive Forms?
+Signal Forms (experimental in Angular 21) eliminate `FormGroup` boilerplate, `valueChanges` subscriptions, and the `takeUntil(destroy$)` pattern. The `form()` function creates a reactive `FieldTree` from a signal model — validation is declarative and errors are accessible as signal arrays.
+
+### Why Tailwind v4?
+Tailwind v4 drops `tailwind.config.js`, uses a single `@import "tailwindcss"` in a `.css` file (not `.scss` — incompatible), and scans templates automatically. Zero configuration, faster builds.
+
+---
+
+## Running Locally
 
 ```bash
-# Install dependencies
-npm ci
+# Clone
+git clone https://github.com/Allfrenk/angulr-ia.git
+cd angulr-ia
 
-# Start dev server (http://localhost:4200)
+# Install
+npm install
+
+# Serve (dev)
 npm start
 
-# Run tests (watch mode)
-npm test
-
-# Run tests (single pass, CI mode)
-npx ng test --watch=false
-
-# Production build
+# Build (production)
 npm run build
+
+# Test
+npm test
 
 # Lint
 npm run lint
 ```
+
+**Demo credentials:** `demo@crm.io` / `demo1234`
 
 ---
 
 ## Project Structure
 
 ```
-angular-starter/
-├── .github/
-│   └── workflows/
-│       └── ci.yml          # GitHub Actions CI pipeline
-├── .husky/
-│   └── pre-commit          # Runs lint-staged before every commit
-├── src/
-│   ├── app/
-│   │   ├── app.ts          # Root component (OnPush, Signals)
-│   │   ├── app.config.ts   # Bootstrap config (Zoneless, Router)
-│   │   ├── app.routes.ts   # Route definitions
-│   │   └── app.spec.ts     # Root component tests
-│   ├── tailwind.css        # Tailwind entry point (@import "tailwindcss")
-│   ├── styles.scss         # Global SCSS styles
-│   └── main.ts             # Application bootstrap
-├── eslint.config.js        # ESLint flat config
-├── postcss.config.mjs      # PostCSS config (Tailwind v4)
-├── angular.json            # Angular workspace config
-└── tsconfig.json           # TypeScript config (strict mode)
+src/app/
+├── core/
+│   ├── data/          # tech-glossary.ts, tags.ts
+│   ├── guards/        # auth-guard.ts
+│   ├── services/      # theme.ts
+│   └── store/         # auth, clients, nav, pipeline, spotlight stores
+├── features/
+│   ├── auth/          # login
+│   ├── clients/       # clients list + client detail
+│   ├── dashboard/
+│   ├── landing/
+│   ├── performance/
+│   └── pipeline/
+├── layout/            # layout with sidebar + router-outlet
+└── shared/
+    └── components/    # grid-background, feature-pill, sidebar, theme-toggle
 ```
 
-New features go in `src/app/` as standalone components. There are no NgModules — Angular 17+ standalone is the only pattern used in this project.
+---
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| zone.js removed | ✅ ~33KB saved |
+| Rendering improvement | +30–40% vs zone.js |
+| Memory reduction | 15–20% |
+| Change detection | Signal-driven only |
+| Lazy loaded | Landing + Login (not in main bundle) |
+
+*Source: Angular team benchmarks, PkgPulse 2025, angular.dev/guide/zoneless*
+
+---
+
+## Author
+
+**Alessandro Catania** · Frontend Developer · Angular specialist
+
+[![GitHub](https://img.shields.io/badge/GitHub-Allfrenk-181717?style=flat-square&logo=github)](https://github.com/Allfrenk)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Alessandro%20Catania-0A66C2?style=flat-square&logo=linkedin)](https://linkedin.com/in/alessandrocatania)
+
+---
+
+<div align="center">
+<sub>Built with Angular 21 · No zone.js · No NgModules · No boilerplate</sub>
+</div>
