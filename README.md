@@ -1,6 +1,6 @@
 <div align="center">
 
-# angulr-ia · CRM Demo
+# microcrm-angular21 · CRM Demo
 
 **A micro-CRM built to showcase Angular 21's most modern features**
 
@@ -11,7 +11,7 @@
 [![Zoneless](https://img.shields.io/badge/Zoneless-default-22C55E?style=flat-square)](https://angular.dev/guide/zoneless)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=flat-square&logo=vercel)](https://microcrm-angular21.vercel.app)
 
-[Live Demo](https://microcrm-angular21.vercel.app) · [Source Code](https://github.com/Allfrenk/angulr-ia)
+[Live Demo](https://microcrm-angular21.vercel.app) · [Source Code](https://github.com/Allfrenk/microcrm-angular21)
 
 </div>
 
@@ -19,7 +19,7 @@
 
 ## What is this?
 
-`angulr-ia` is a **portfolio-grade CRM demo** built with Angular 21, designed to demonstrate real-world usage of the framework's most modern APIs — not just toy examples.
+`microcrm-angular21` is a **portfolio-grade CRM demo** built with Angular 21, designed to demonstrate real-world usage of the framework's most modern APIs — not just toy examples.
 
 Every feature in this app serves a dual purpose: it functions as a working CRM (clients, pipeline, dashboard) and it documents itself, explaining to the reader exactly which Angular 21 patterns are being used and why.
 
@@ -149,8 +149,8 @@ Tailwind v4 drops `tailwind.config.js`, uses a single `@import "tailwindcss"` in
 
 ```bash
 # Clone
-git clone https://github.com/Allfrenk/angulr-ia.git
-cd angulr-ia
+git clone https://github.com/Allfrenk/microcrm-angular21.git
+cd microcrm-angular21
 
 # Install
 npm install
